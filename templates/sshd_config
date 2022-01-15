@@ -1,0 +1,4 @@
+Include /etc/ssh/sshd_config.d/*.conf
+PubkeyAuthentication yes
+PermitRootLogin no
+PasswordAuthentication no

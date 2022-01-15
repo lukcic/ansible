@@ -1,0 +1,40 @@
+---
+- hosts: all
+  become: yes
+  tasks:
+    - name: Set static IP address
+      template:
+        src: ./templates/netplan
+        dest: /etc/netplan/00-installer-config.yaml
+    - name: netpplan applying
+      command: netplan apply
+    - name: Add authorized key
+      authorized_key:
+        user: ubuntu
+        state: present
+        key: "{{ lookup('file','/home/ubuntu/.ssh/pub.key') }}"
+    - name: Install python3
+      apt: 
+        name: python3
+        state: present
+    - name: sshd config
+      template: 
+        src: ./templates/sshd_config 
+        dest: /etc/ssh/sshd_config
+    - name: Restart ssh
+      service: 
+        name: sshd
+        state: restarted
+    - name: Disabling systemd-resolve
+      service:
+        name: systemd-resolved
+        state: stopped
+        enabled: no
+    - name: Disabling IPv6
+      shell: sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="maybe-ubiquity"/GRUB_CMDLINE_LINUX_DEFAULT="ipv6.disable=1"/' /etc/default/grub
+    - name: Disabling ipv6 
+      shell: sed -i 's/GRUB_CMDLINE_LINUX=""/GRUB_CMDLINE_LINUX="ipv6.disable=1"/' /etc/default/grub
+    - name: Upgade GRUB    
+      shell: update-grub
+    - name: Reboot
+      shell: reboot

@@ -6,35 +6,53 @@
       template:
         src: ./templates/netplan
         dest: /etc/netplan/00-installer-config.yaml
-    - name: netpplan applying
-      command: netplan apply
+        notify: Apply netplan
+
     - name: Add authorized key
       authorized_key:
         user: ubuntu
         state: present
         key: "{{ lookup('file','/home/ubuntu/.ssh/pub.key') }}"
+
+    - name: Sudoers without passwd
+      lineinfile:
+        path: /etc/sudoers
+        state: present
+        regexp: '^%sudo'
+        line: '%sudo ALL=(ALL) NOPASSWD: ALL'
+        validate: /usr/sbin/visudo -cf %s
+
     - name: Install python3
       apt: 
         name: python3
         state: present
+
     - name: sshd config
       template: 
         src: ./templates/sshd_config 
         dest: /etc/ssh/sshd_config
-    - name: Restart ssh
-      service: 
-        name: sshd
-        state: restarted
+        notify: Restart SSHD
+
     - name: Disabling systemd-resolve
       service:
         name: systemd-resolved
         state: stopped
         enabled: no
+      notify: Reboot
+
     - name: Disabling IPv6
-      shell: sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="maybe-ubiquity"/GRUB_CMDLINE_LINUX_DEFAULT="ipv6.disable=1"/' /etc/default/grub
-    - name: Disabling ipv6 
-      shell: sed -i 's/GRUB_CMDLINE_LINUX=""/GRUB_CMDLINE_LINUX="ipv6.disable=1"/' /etc/default/grub
-    - name: Upgade GRUB    
-      shell: update-grub
+      shell: "{{ item }}"
+      with_items:
+      - sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="maybe-ubiquity"/GRUB_CMDLINE_LINUX_DEFAULT="ipv6.disable=1"/' /etc/default/grub
+      - sed -i 's/GRUB_CMDLINE_LINUX=""/GRUB_CMDLINE_LINUX="ipv6.disable=1"/' /etc/default/grub
+      notify: Update grub
+
+  handlers:
+    - name: Restart SSHD
+      service: name=sshd state=restarted
+    - name: Apply netplan
+      command: netplan apply
+    - name: Update grub
+      command: update-grub
     - name: Reboot
-      shell: reboot
+      command: reboot

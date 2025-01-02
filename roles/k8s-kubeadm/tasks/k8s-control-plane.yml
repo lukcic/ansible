@@ -34,3 +34,22 @@
         mode: '0600'
         owner: '{{ admin_user }}'
         group: '{{ admin_user }}'
+
+# - name: Parse kubeadm join command
+#   ansible.builtin.set_fact:
+#     kubeadm_join_command: >-
+#       {{
+#         kubeadm_output.stdout_lines
+#         | select("search", "^kubeadm join")
+#         | list
+#         | first
+#       }}
+
+- name: Extract kubeadm join command
+  ansible.builtin.set_fact:
+    kubeadm_join_command: |
+      {{ kubeadm_init_result.stdout_lines[-3:] | join(' ') }}
+
+- name: Debug kubeadm join command
+  ansible.builtin.debug:
+    msg: 'Join command: {{ kubeadm_join_command }}'

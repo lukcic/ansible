@@ -1,0 +1,7 @@
+---
+- name: Test run
+  hosts: master
+  become: true
+  debugger: on_failed
+  roles:
+    - k8s-kubeadm

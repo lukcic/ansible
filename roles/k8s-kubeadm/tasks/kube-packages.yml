@@ -21,6 +21,7 @@
           - kubelet
           - kubeadm
           - kubectl
+          - pip
         state: present
 
     - name: Hold K8s packages
@@ -32,3 +33,10 @@
         - kubectl
       register: package_held
       changed_when: package_held.rc != 0
+
+    - name: Install Ansible pre-requisites
+      ansible.builtin.pip:
+        name:
+          - pyyaml
+          - kubernetes
+        break_system_packages: true

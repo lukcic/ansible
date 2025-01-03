@@ -28,3 +28,22 @@
   when:
     - host_type == 'vm'
     - not kubernetes_init.stat.exists
+
+- name: Check if tigera-operator namespace exists
+  become: true
+  become_user: '{{ admin_user }}'
+  ansible.builtin.command: kubectl get ns tigera-operator
+  register: calico_exists
+  ignore_errors: true
+  changed_when: >
+    calico_exists.rc != 0 and
+    'Error from server (NotFound): namespaces "tigera-operator" not found' in calico_exists.stderr
+  failed_when: >
+    calico_exists.rc != 0 and
+    'Error from server (NotFound): namespaces "tigera-operator" not found' not in calico_exists.stderr
+
+- name: Install Calico network plugin
+  ansible.builtin.include_tasks:
+    file: calico.yml
+  when:
+    - calico_exists.changed

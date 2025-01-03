@@ -41,8 +41,8 @@
         backup: true
       notify: Restart containerd
 
-    # - name: Restart containerd
-    #   ansible.builtin.systemd_service:
-    #     name: containerd
-    #     state: restarted
-    #     enabled: true
+    - name: Restart containerd
+      ansible.builtin.systemd_service:
+        name: containerd
+        state: restarted
+        enabled: true

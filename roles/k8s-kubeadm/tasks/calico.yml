@@ -11,8 +11,8 @@
         dest: '/tmp'
         mode: '0664'
       loop:
-        - 'https://raw.githubusercontent.com/projectcalico/calico/{{ calivo_ver }}/manifests/tigera-operator.yaml'
-        - 'https://raw.githubusercontent.com/projectcalico/calico/{{ calivo_ver }}/manifests/custom-resources.yaml'
+        - 'https://raw.githubusercontent.com/projectcalico/calico/{{ calico_ver }}/manifests/tigera-operator.yaml'
+        - 'https://raw.githubusercontent.com/projectcalico/calico/{{ calico_ver }}/manifests/custom-resources.yaml'
 
     - name: Modify pod network cidr
       ansible.builtin.replace:

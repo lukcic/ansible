@@ -21,7 +21,6 @@
           - kubelet
           - kubeadm
           - kubectl
-          - pip
         state: present
 
     - name: Hold K8s packages

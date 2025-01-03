@@ -35,16 +35,6 @@
         owner: '{{ admin_user }}'
         group: '{{ admin_user }}'
 
-    # - name: Parse kubeadm join command
-    #   ansible.builtin.set_fact:
-    #     kubeadm_join_command: >-
-    #       {{
-    #         kubeadm_output.stdout_lines
-    #         | select("search", "^kubeadm join")
-    #         | list
-    #         | first
-    #       }}
-
     - name: Extract kubeadm join command
       ansible.builtin.set_fact:
         kubeadm_join_command: |

@@ -17,8 +17,6 @@
     - name: Disable SWAP for the current session
       ansible.builtin.command:
         cmd: swapoff -a
-      register: swap_status
-      changed_when: swap_status.rc != 0
 
     - name: Disable SWAP permanently
       ansible.builtin.replace:
@@ -40,8 +38,6 @@
     - name: Modprobe
       ansible.builtin.command:
         cmd: 'modprobe overlay br_netfilter'
-      register: kernel_modules
-      changed_when: kernel_modules.rc != 0
 
     - name: Set the kernel parameters
       ansible.builtin.lineinfile:
@@ -57,5 +53,3 @@
     - name: Apply sysctl params without reboot
       ansible.builtin.command:
         cmd: sysctl --system
-      register: sysctl
-      changed_when: sysctl.rc != 0

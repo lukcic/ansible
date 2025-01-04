@@ -5,13 +5,13 @@
   block:
     - name: Add K8s signing key
       ansible.builtin.get_url:
-        url: https://pkgs.k8s.io/core:/stable:/v1.32/deb/Release.key
+        url: https://pkgs.k8s.io/core:/stable:/v{{ k8s_packages_version }}/deb/Release.key
         dest: /etc/apt/keyrings/kubernetes-apt-keyring.asc
         mode: '0644'
 
     - name: Add K8s repo
       ansible.builtin.apt_repository:
-        repo: 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.asc] https://pkgs.k8s.io/core:/stable:/v1.32/deb/ /'
+        repo: 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.asc] https://pkgs.k8s.io/core:/stable:/v{{ k8s_packages_version }}/deb/ /'
         state: present
         filename: /etc/apt/sources.list.d/kubernetes.list
 
@@ -27,9 +27,9 @@
       ansible.builtin.command:
         cmd: 'apt-mark hold {{ item }}'
       with_items:
-        - kubelet
-        - kubeadm
-        - kubectl
+        - 'kubelet={{ k8s_packages_version }}'
+        - 'kubeadm={{ k8s_packages_version }}'
+        - 'kubectl={{ k8s_packages_version }}'
       register: package_held
       changed_when: package_held.rc != 0
 

@@ -1,0 +1,43 @@
+- name: PVE - configure networking
+  become: true
+  tags: networking
+  block:
+    # - name: Display all variables/facts known for a host
+    #   ansible.builtin.debug:
+    #     var: hostvars[inventory_hostname]
+    # var: hostvars[inventory_hostname][default_ipv4][address/interface/gateway/prefix]
+
+    - name: Get physical interfaces names
+      ansible.builtin.command: |
+        find '/sys/class/net' -type l -not -lname '*virtual*' -printf '%f\n'
+      register: physical_interface
+      changed_when: false
+      check_mode: false
+
+    - name: Create Interfaces file from template
+      ansible.builtin.template:
+        src: '{{ role_path }}/templates/interfaces.j2'
+        dest: '/etc/network/interfaces'
+        mode: '0644'
+        owner: root
+        group: root
+      register: interfaces_change
+
+    - name: Restart Network Manager
+      ansible.builtin.systemd:
+        name: networking.service
+        state: restarted
+      when: interfaces_change.changed
+      # noqa: no-handler
+
+    - name: Set static hostname
+      ansible.builtin.hostname:
+        name: '{{ inventory_hostname_short }}'
+
+    - name: Create Hosts file from template
+      ansible.builtin.template:
+        src: '{{ role_path }}/templates/hosts.j2'
+        dest: '/etc/hosts'
+        mode: '0644'
+        owner: root
+        group: root

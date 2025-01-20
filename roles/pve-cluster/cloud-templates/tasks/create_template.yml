@@ -1,0 +1,77 @@
+- name: Check if template exists
+  tags: pve-templates
+  block:
+    - name: Generate template id
+      ansible.builtin.set_fact:
+        template_id: '9{{ ansible_play_hosts_all.index(inventory_hostname) + 1 }}{{ item.value.image_id }}'
+
+    - name: Check if template exists
+      ansible.builtin.command: |
+        qm status '{{ template_id }}'
+      register: template_exists
+      ignore_errors: true
+      changed_when: >
+        template_exists.rc != 0 and
+        ("Configuration file 'nodes/{}/qemu-server/{}.conf' does not exist".format(inventory_hostname, template_id) in template_exists.stderr)
+      failed_when: >
+        template_exists.rc != 0 and
+        ("Configuration file 'nodes/{}/qemu-server/{}.conf' does not exist".format(inventory_hostname, template_id) not in template_exists.stderr)
+
+- name: Create template
+  tags: pve-templates
+  when: template_exists.changed
+  block:
+    - name: Create empty VM
+      ansible.builtin.command: |
+        qm create '{{ template_id }}' --name '{{ item.value.template_name }}' --cores 2 --memory 4096 \
+        --agent 1 --net0 virtio,bridge='{{ pve_cloud_templates_bridge_name }}'
+      args:
+        chdir: '{{ pve_cloud_templates_images_path }}'
+
+    - name: Import disk
+      ansible.builtin.command: |
+        qm set {{ template_id }} --scsi0 {{ pve_cloud_templates_storage_name }}:0,import-from=''{{ pve_cloud_templates_images_path }}'/{{ item.value.filename }}'
+      args:
+        chdir: '{{ pve_cloud_templates_images_path }}'
+
+    - name: Add CloudInit disk
+      ansible.builtin.command: |
+        qm set {{ template_id }} --ide2 {{ pve_cloud_templates_storage_name }}:cloudinit --boot order=scsi0 --serial0 socket
+      args:
+        chdir: '{{ pve_cloud_templates_images_path }}'
+
+    - name: Resize disk
+      ansible.builtin.shell: |
+        qm resize '{{ template_id }}' scsi0 +10G
+
+    - name: Configure DHCP
+      ansible.builtin.shell: |
+        qm set '{{ template_id }}' --ipconfig0 ip=dhcp
+
+    - name: Add SSH key
+      ansible.builtin.shell: |
+        qm set '{{ template_id }}' --sshkey '{{ pve_cloud_templates_remote_ssh_key_path }}'
+
+    - name: Set password
+      ansible.builtin.shell: |
+        qm set '{{ template_id }}' --cipassword '{{ template_password }}'
+
+    - name: Make CloudInit dump
+      ansible.builtin.shell: |
+        qm cloudinit dump '{{ template_id }}' user
+
+    - name: Create template
+      ansible.builtin.shell: |
+        qm template '{{ template_id }}'
+
+- name: Start test vm
+  tags: pve-templates
+  when: pve_cloud_templates_create_test_vms and template_exists.changed
+  block:
+    - name: Create new VM from template
+      ansible.builtin.shell: |
+        qm clone '{{ template_id }}' '{{ template_id }}'0 --name '{{ item.value.template_name }}'-test
+
+    - name: Start VM
+      ansible.builtin.shell: |
+        qm start '{{ template_id }}'0

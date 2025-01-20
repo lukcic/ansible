@@ -1,0 +1,26 @@
+pve_cloud_templates_distros:
+  debian12:
+    template_name: debian12-cloud
+    image_id: 2
+    filename: debian-12-generic-amd64.qcow2
+    url: 'https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-generic-amd64.qcow2'
+  ubuntu_jammy:
+    template_name: ubuntu-jammy-cloud
+    image_id: 3
+    filename: jammy-server-cloudimg-amd64.img
+    url: 'https://cloud-images.ubuntu.com/jammy/current/jammy-server-cloudimg-amd64.img'
+  ubuntu_focal:
+    template_name: ubuntu-focal-cloud
+    image_id: 4
+    filename: focal-server-cloudimg-amd64.img
+    url: 'https://cloud-images.ubuntu.com/focal/current/focal-server-cloudimg-amd64.img'
+  fedora39:
+    template_name: fedora39-cloud
+    image_id: 5
+    filename: Fedora-Cloud-Base-39-1.5.x86_64.qcow2
+    url: 'https://download.fedoraproject.org/pub/fedora/linux/releases/39/Cloud/x86_64/images/Fedora-Cloud-Base-39-1.5.x86_64.qcow2'
+
+pve_cloud_templates_storage_name: local-zfs
+pve_cloud_templates_bridge_name: vmbr0
+pve_cloud_templates_images_path: /var/lib/vz/images
+pve_cloud_templates_create_test_vms: true

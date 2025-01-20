@@ -1,0 +1,79 @@
+- name: Create Proxmox Cluster on the manager node
+  tags: cluster
+  block:
+    - name: Check if cluster already exists
+      ansible.builtin.stat:
+        path: /etc/pve/corosync.conf
+      register: cluster_config_exists
+
+    - name: Create cluster
+      ansible.builtin.command: pvecm create '{{ pve_cluster_name }}'
+      register: cluster_initialization
+      changed_when: cluster_initialization.rc != 0
+      when: not cluster_config_exists and is_cluster_manager is defined and is_cluster_manager
+
+    - name: Display cluster initialization output
+      ansible.builtin.debug:
+        var: cluster_initialization
+
+    - name: Collect IP addresses of all nodes
+      ansible.builtin.set_fact:
+        main_nodes_ips: "{{ groups.all | map('extract', hostvars, ['ansible_default_ipv4', 'address']) | list }}"
+      run_once: true
+
+    - name: Display IPs list
+      ansible.builtin.debug:
+        var: main_nodes_ips
+      run_once: true
+
+    - name: Build IP to inventory hostname map
+      ansible.builtin.set_fact:
+        ip_to_inventory_hostname: >-
+          {{
+            dict(
+              ansible_play_hosts_all | map('extract', hostvars, ['ansible_default_ipv4', 'address']) |
+              zip(ansible_play_hosts_all)
+            )
+          }}
+
+    - name: Debug the IP mapping
+      ansible.builtin.debug:
+        var: ip_to_inventory_hostname
+      run_once: true
+
+    # - name: Retrieve manager IP
+    #   ansible.builtin.debug:
+    #     msg: '{{ item }} is the cluster manager'
+    #   when: hostvars[ip_to_inventory_hostname[item]].is_cluster_manager | default(false) | bool
+    #   loop: '{{ main_nodes_ips }}'
+    #   run_once: true
+
+    - name: Retrieve manager IP
+      ansible.builtin.set_fact:
+        cluster_manager_ip: '{{ item }}'
+      when: hostvars[ip_to_inventory_hostname[item]].is_cluster_manager | default(false) | bool
+      loop: '{{ main_nodes_ips }}'
+      run_once: true
+
+    - name: Display manager IP
+      ansible.builtin.debug:
+        msg: '{{ cluster_manager_ip }} is the cluster manager'
+      run_once: true
+
+    - name: Install pexpect packages
+      ansible.builtin.apt:
+        name: python3-pexpect
+      when: cluster_config_exists and not cluster_config_exists.stat.exists
+
+    - name: Join cluster
+      ansible.builtin.expect:
+        command: 'pvecm add {{ cluster_manager_ip }}'
+        responses:
+          (?i)password: '{{ pve_cluster_password }}'
+          (?i)continue connecting: 'yes'
+      when: cluster_config_exists and not cluster_config_exists.stat.exists
+      register: cluster_join_result
+
+    - name: Debug the IP mapping
+      ansible.builtin.debug:
+        var: cluster_join_result

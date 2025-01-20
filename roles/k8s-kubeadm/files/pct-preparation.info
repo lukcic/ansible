@@ -1,0 +1,44 @@
+1. Container must be privileged with nesting enabled
+
+2. Proxmox node: /etc/pve/lxc/ID.conf
+
+add: 
+lxc.apparmor.profile: unconfined
+lxc.cgroup.devices.allow: a
+lxc.cap.drop:
+lxc.mount.auto: "proc:rw sys:rw"
+
+3. Publish the kernel boot configuration into the container:
+pct push <container id> /boot/config-$(uname -r) /boot/config-$(uname -r)
+
+3. Inside container alias /dev/kmsg to /dev/console:
+
+/usr/local/bin/conf-kmsg.sh
+
+```sh
+#!/bin/sh -e
+if [ ! -e /dev/kmsg ]; then
+    ln -s /dev/console /dev/kmsg
+fi
+
+mount --make-rshared /
+```
+
+Create service
+/etc/systemd/system/conf-kmsg.service
+
+[Unit]
+Description=Make sure /dev/kmsg exists
+
+[Service]
+Type=simple
+RemainAfterExit=yes
+ExecStart=/usr/local/bin/conf-kmsg.sh
+TimeoutStartSec=0
+
+[Install]
+WantedBy=default.target
+
+chmod +x /usr/local/bin/conf-kmsg.sh
+systemctl daemon-reload
+systemctl enable --now conf-kmsg

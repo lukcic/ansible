@@ -1,0 +1,15 @@
+source /etc/network/interfaces.d/*
+
+auto lo
+iface lo inet loopback
+
+auto {{ physical_interface.stdout_lines[0] }}
+iface {{ physical_interface.stdout_lines[0] }} inet manual
+
+auto {{ networking_bridge_name }}
+iface {{ networking_bridge_name }} inet static
+        address {{ hostvars[inventory_hostname]['ansible_facts']['default_ipv4']['address'] }}/{{ hostvars[inventory_hostname]['ansible_facts']['default_ipv4']['prefix'] }}
+        gateway {{ hostvars[inventory_hostname]['ansible_facts']['default_ipv4']['gateway'] }}
+        bridge-ports {{ physical_interface.stdout_lines[0] }}
+        bridge-stp off
+        bridge-fd 0

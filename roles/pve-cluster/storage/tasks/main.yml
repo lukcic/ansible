@@ -1,0 +1,4 @@
+- name: Create additional storage
+  ansible.builtin.include_tasks: nfs.yml
+  with_dict: '{{ nfs_shares }}'
+  tags: nfs-shares

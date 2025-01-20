@@ -1,0 +1,29 @@
+- name: Create VM templates using cloud images
+  become: true
+  tags: pve-templates
+  debugger: on_failed
+  block:
+    - name: Create directory for storing images
+      ansible.builtin.file:
+        path: '{{ pve_cloud_templates_images_path }}'
+        state: directory
+        mode: '0755'
+
+    - name: Copy ssh public key
+      ansible.builtin.copy:
+        src: '{{ pve_cloud_templates_local_ssh_key_path }}'
+        dest: '{{ pve_cloud_templates_remote_ssh_key_path }}'
+        mode: '0600'
+        owner: root
+        group: root
+
+    - name: Download cloud image
+      ansible.builtin.get_url:
+        url: '{{ item.value.url }}'
+        dest: '{{ pve_cloud_templates_images_path }}/{{ item.value.filename }}'
+        mode: '0444'
+      with_dict: '{{ pve_cloud_templates_distros }}'
+
+    - name: Generate templates
+      ansible.builtin.include_tasks: create_template.yml
+      with_dict: '{{ pve_cloud_templates_distros }}'

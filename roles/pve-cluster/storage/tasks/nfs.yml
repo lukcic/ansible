@@ -1,0 +1,20 @@
+- name: Connect NFS storage
+  become: true
+  tags: nfs-shares
+  block:
+    - name: Check if storage exists
+      ansible.builtin.command: |
+        pvesm status --storage {{ item.value.share_name }}
+      register: storage_exists
+      ignore_errors: true
+      changed_when: storage_exists.rc != 0
+
+    - name: Add NFS shares
+      ansible.builtin.command: |
+        pvesm add nfs {{ item.value.share_name }}  --server {{ item.value.server }} \
+        --export {{ item.value.export }} --content {{ item.value.content }}  --options {{ item.value.options }}
+      when: storage_exists.changed
+      register: nfs_added
+      changed_when: nfs_added.rc != 0
+      run_once: true
+      # noqa: no-handler

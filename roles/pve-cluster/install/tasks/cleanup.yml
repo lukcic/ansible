@@ -1,0 +1,25 @@
+- name: Cleanup after installation
+  tags: pve-install
+  block:
+    - name: Cleanup - autoremove no longer needed dependencies
+      ansible.builtin.apt:
+        autoremove: true
+
+    - name: Cleanup - autoclean the local package files
+      ansible.builtin.apt:
+        autoclean: true
+
+    - name: Remove old kernel images and os-prober
+      ansible.builtin.apt:
+        name: '{{ item }}'
+        state: absent
+      with_items:
+        - linux-image-amd64
+        - linux-image-6*
+      notify: Update GRUB
+
+    - name: Disable os-prober
+      ansible.builtin.apt:
+        name: os-prober
+        state: absent
+      notify: Restart host

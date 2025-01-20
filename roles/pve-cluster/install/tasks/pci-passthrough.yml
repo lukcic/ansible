@@ -1,0 +1,32 @@
+- name: Enable PCI Passthrough
+  block:
+    - name: Enable iommu
+      ansible.builtin.replace:
+        path: /etc/default/grub
+        regexp: GRUB_CMDLINE_LINUX_DEFAULT="quiet"
+        replace: GRUB_CMDLINE_LINUX_DEFAULT="quiet intel_iommu=on iommu=pt"
+      notify: Update GRUB
+
+    - name: Check if kernel modules are enabled
+      ansible.builtin.shell:
+        cmd: |
+          set -o pipefail
+          cat /etc/modules | grep vfio | wc -l
+        executable: /bin/bash
+      register: modules_present
+      ignore_errors: true
+      changed_when: modules_present.rc != 0
+      # TODO: fix this mess
+
+    - name: Add kernel modules
+      ansible.builtin.lineinfile:
+        state: present
+        path: /etc/modules
+        line: '{{ item }}'
+      with_items:
+        - vfio
+        - vfio_iommu_type1
+        - vfio_pci
+        - vfio_virqfd
+      when: modules_present.rc != 0
+      notify: Restart host

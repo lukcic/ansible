@@ -1,0 +1,26 @@
+- name: PVE - disable SWAP and extend data volume
+  tags: swapoff
+  block:
+    - name: Disable SWAP
+      ansible.builtin.command: swapoff -a
+      register: swapoff_output
+      changed_when: swapoff_output.rc != 0
+
+    - name: Remove SWAP mount from fstab
+      ansible.builtin.lineinfile:
+        path: /etc/fstab
+        state: absent
+        regex: '^/dev/pve/swap'
+
+    - name: Remove SWAP lvm
+      community.general.lvol:
+        vg: pve
+        lv: swap
+        state: absent
+        force: true
+
+    - name: Extend data LVM
+      community.general.lvol:
+        vg: pve
+        lv: data
+        size: +100%FREE
